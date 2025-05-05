@@ -1,0 +1,49 @@
+services:
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    ports:
+      - '8081:5432'
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: arvind
+      POSTGRES_PASSWORD: secret
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    networks:
+      - postgres
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+      - '8082:80'
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: arvind400@yahoo.com
+      PGADMIN_DEFAULT_PASSWORD: secret
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    networks:
+      - postgres
+  zipkin:
+    container_name: zipkin_container
+    image: openzipkin/zipkin
+    ports:
+      - '9411:9411'
+    networks:
+      - postgres
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - postgres
+volumes:
+  postgres:
+  pgadmin:
+networks:
+  postgres:
+    driver: bridge
