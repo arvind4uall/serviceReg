@@ -1,6 +1,6 @@
 services:
   postgres:
-    container_name: postgres_container
+    container_name: postgres
     image: postgres
     ports:
       - '8081:5432'
@@ -27,11 +27,12 @@ services:
     networks:
       - postgres
   zipkin:
-    container_name: zipkin_container
+    container_name: zipkin
     image: openzipkin/zipkin
     ports:
       - '9411:9411'
     networks:
+      - microservice-network
       - postgres
   rabbitmq:
     image: rabbitmq:3-management
@@ -40,10 +41,91 @@ services:
       - 5672:5672
       - 15672:15672
     networks:
+      - microservice-network
       - postgres
+
+  config-server:
+    image: arvind4uall/configserver:latest
+    container_name: config-server
+    ports:
+      - 8080:8080
+    depends_on:
+      - servicereg
+    networks:
+      - microservice-network
+      - postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+  servicereg:
+    image: arvind4uall/servicereg
+    container_name: servicereg
+    ports:
+      - "8761:8761"
+    depends_on:
+      - rabbitmq
+      - zipkin
+      - postgres
+      - pgadmin
+    networks:
+      - microservice-network
+      - postgres
+  companyms:
+    image: arvind4uall/companyms:latest
+    container_name: companyms
+    ports:
+      - 8083:8083
+    depends_on:
+      - servicereg
+      - config-server
+    networks:
+      - microservice-network
+      - postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+  jobms:
+    image: arvind4uall/jobms:latest
+    container_name: jobms
+    ports:
+      - 8084:8084
+    depends_on:
+      - servicereg
+      - config-server
+    networks:
+      - microservice-network
+      - postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+  reviewms:
+    image: arvind4uall/reviewms:latest
+    container_name: reviewms
+    ports:
+      - 8085:8085
+    depends_on:
+      - servicereg
+      - config-server
+    networks:
+      - microservice-network
+      - postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+  gateway:
+    image: arvind4uall/gateway:latest
+    container_name: gateway
+    ports:
+      - 8086:8086
+    depends_on:
+      - servicereg
+    networks:
+      - microservice-network
+      - postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
 volumes:
   postgres:
   pgadmin:
 networks:
   postgres:
+    driver: bridge
+  microservice-network:
     driver: bridge
